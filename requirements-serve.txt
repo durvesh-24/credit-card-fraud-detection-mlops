@@ -1,0 +1,14 @@
+# Minimal pinned dependencies for the API image. Versions MUST match requirements.txt for
+# anything involved in (un)pickling the model: scikit-learn, xgboost, numpy, cloudpickle.
+mlflow-skinny==2.19.0
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.14.1
+scikit-learn==1.5.2
+xgboost-cpu==2.1.3     # same `xgboost` module, without ~700 MB of CUDA libraries
+cloudpickle==3.1.2
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+prometheus-fastapi-instrumentator==7.0.0
+prometheus-client==0.21.1
