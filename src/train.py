@@ -294,7 +294,8 @@ def run(model_type: str | None = None, tune: bool | None = None, n_trials: int |
         })
 
     REPORTS_DIR.mkdir(exist_ok=True)
-    (REPORTS_DIR / "metrics.json").write_text(json.dumps(report, indent=2))
+    # LF on every OS, so the hash DVC records matches the file git stores
+    (REPORTS_DIR / "metrics.json").write_text(json.dumps(report, indent=2), newline="\n")
     print(f"{model_type}: val PR-AUC {val_m['pr_auc']:.4f} | test PR-AUC {test_m['pr_auc']:.4f} | "
           f"F1-optimal threshold {threshold:.4f} -> registered {model_name} v{version}")
     return report
