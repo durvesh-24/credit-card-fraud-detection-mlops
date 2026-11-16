@@ -1,0 +1,20 @@
+{
+  "train": {
+    "rows": 199364,
+    "fraud_rate": 0.001926,
+    "time_min": 0.0,
+    "time_max": 132928.0
+  },
+  "val": {
+    "rows": 42721,
+    "fraud_rate": 0.001311,
+    "time_min": 132929.0,
+    "time_max": 151328.0
+  },
+  "test": {
+    "rows": 42722,
+    "fraud_rate": 0.001217,
+    "time_min": 151328.0,
+    "time_max": 172792.0
+  }
+}
