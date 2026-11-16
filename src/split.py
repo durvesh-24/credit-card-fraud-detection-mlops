@@ -51,7 +51,8 @@ def run() -> dict:
         for name, part in {"train": train, "val": val, "test": test}.items()
     }
     REPORTS_DIR.mkdir(exist_ok=True)
-    (REPORTS_DIR / "split_stats.json").write_text(json.dumps(stats, indent=2))
+    # LF on every OS, so the hash DVC records matches the file git stores
+    (REPORTS_DIR / "split_stats.json").write_text(json.dumps(stats, indent=2), newline="\n")
     print(json.dumps(stats, indent=2))
     return stats
 
