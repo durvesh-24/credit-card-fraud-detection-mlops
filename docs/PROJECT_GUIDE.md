@@ -336,9 +336,9 @@ ruff check .  ;  pytest
 
 ---
 
-## 9. What has been verified, and what is still to do
+## 9. What has been verified
 
-Verified while building, on a **synthetic** dataset with the real schema, since the Kaggle file wasn't on this machine yet:
+First, every component was verified on a **synthetic** dataset with the real schema:
 - `dvc add` / `dvc push` to the local remote; `dvc repro` runs validate → split → train.
 - Training registers versions in MLflow, and nested Optuna runs appear under their parent.
 - First promotion sets `@champion`; re-running is a no-op; rollback moves the alias both ways.
@@ -346,8 +346,12 @@ Verified while building, on a **synthetic** dataset with the real schema, since 
 - Clean traffic → no drift; drifted traffic → exactly the 13 manipulated features flagged; the Prefect monitoring flow triggers the retraining subflow, which registers a new version and correctly **keeps** the champion (same data → no real improvement).
 - 49 tests pass; ruff is clean; the CI smoke job was replayed locally.
 
-**To do with the real data** (the synthetic run's numbers are meaningless and were not committed):
-1. Put the real `creditcard.csv` in `data/raw/`, then `dvc add` + commit the `.dvc` pointer + `dvc push`.
-2. `docker compose up -d`, `dvc repro`, `python -m src.promote`, then commit `dvc.lock` and `reports/metrics.json`.
-3. Copy the numbers from `reports/metrics.json` into the README results table.
-4. Push to GitHub and watch the Actions tab go green.
+Then the pipeline was run on the **real Kaggle data** (284,807 rows, 492 frauds). The synthetic results were deleted and never committed:
+1. The data is DVC-tracked (`data/raw/creditcard.csv.dvc`, md5 `e90efcb8…`) and pushed to the DVC remote.
+2. `dvc repro` produced the committed `dvc.lock` and the `reports/` files: XGBoost reaches test PR-AUC 0.758 against 0.696 for the baseline, and was promoted to `@champion` (v1).
+3. An Optuna-tuned model (v2) scored higher on validation but lower on test, so the promotion gate kept v1.
+4. 2,022 real requests through the Docker API: p50 63 ms, p95 94 ms, p99 179 ms.
+5. On test-period traffic the drift monitor flags all 29 features. This is a genuine shift (a train-vs-train control flags 0/29), and it shows the drift rule needs a rolling reference and effect-size thresholds (see README → Limitations).
+6. GitHub Actions passes lint + tests, the pipeline smoke run, and the image push to GHCR.
+
+Full numbers are in the README → Results.
