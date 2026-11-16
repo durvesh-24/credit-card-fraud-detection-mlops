@@ -182,6 +182,7 @@ curl.exe -X POST http://localhost:8000/reload
 |---|---|
 | `make_sample_data.py` | Generates a **synthetic** CSV with the real schema, for smoke tests and CI. Its metrics are meaningless. |
 | `rollback.py` | `--list` shows versions with aliases, val PR-AUC and threshold. `--version N` repoints `@champion`. |
+| `demo_traffic.py` | Sends continuous live traffic for a set time: normal test-period payments, a share of real frauds (`--fraud-share`) and invalid requests (`--invalid-share`), so every Grafana panel shows data. |
 | `simulate_drift.py` | Samples test transactions, multiplies `Amount` ×3, adds Gaussian noise to V1–V12, and POSTs them to the API. `--no-drift` sends clean data for comparison. |
 
 ### `tests/` — 49 automated tests (no MLflow server, no real data)
@@ -307,6 +308,7 @@ python -m src.promote
 python scripts/rollback.py --list
 python scripts/rollback.py --version 3
 curl.exe -X POST http://localhost:8000/reload
+python scripts/demo_traffic.py --minutes 10 [--rps 5]
 python scripts/simulate_drift.py --n 500 [--no-drift]
 python -m src.monitor [--retrain] [--lookback-hours 24]
 python -m src.flows retrain | monitor | serve
@@ -330,7 +332,8 @@ ruff check .  ;  pytest
 | Drift flagged features that were never changed | The simulator re-sent the *same* rows twice; duplicates inflate KS significance | Simulator now samples fresh rows by default (`--seed` optional) |
 | `docker compose up` → `ports are not available ... bind: Only one usage of each socket address` | Another program already uses that host port (here: a Windows-installed Grafana on 3000 and another uvicorn app on 8000) | Set `API_PORT` / `GRAFANA_PORT` (etc.) in `.env`, e.g. 8001 / 3001, and keep `API_URL` in sync |
 | `curl localhost:8000/health` → `{"detail":"Not Found"}` (404) | You reached a *different* app on port 8000, not this API | Same fix: use the port from `API_PORT` |
-| Docker Desktop: *"An unexpected error occurred"*, log says `remove ...engine.sock` / `...run\dockerInference: The file cannot be accessed by the system` | Stale Unix-socket files left by a previous Docker run that Windows can't delete | Quit Docker Desktop, rename `%LOCALAPPDATA%\docker-secrets-engine` and `%LOCALAPPDATA%\Dockerun` (e.g. append `.stale`), start Docker again |
+| Docker Desktop: *"An unexpected error occurred"*, log says `remove ...engine.sock` / `...run\dockerInference: The file cannot be accessed by the system` | Stale Unix-socket files left by a previous Docker run that Windows can't delete | Quit Docker Desktop, rename `%LOCALAPPDATA%\docker-secrets-engine` and `%LOCALAPPDATA%\Docker
+un` (e.g. append `.stale`), start Docker again |
 | API `/health` returns 503 | No `@champion` yet, or MLflow unreachable | Train + promote, then `POST /reload` |
 | Prefect schedule disappears | `serve` started a *temporary* Prefect server | `prefect server start` + set `PREFECT_API_URL` |
 
