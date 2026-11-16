@@ -52,7 +52,8 @@ def run() -> dict:
         "valid": True,
     }
     REPORTS_DIR.mkdir(exist_ok=True)
-    (REPORTS_DIR / "validation.json").write_text(json.dumps(summary, indent=2))
+    # LF on every OS, so the hash DVC records matches the file git stores
+    (REPORTS_DIR / "validation.json").write_text(json.dumps(summary, indent=2), newline="\n")
     print(f"Validation passed: {summary}")
     return summary
 
