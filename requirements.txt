@@ -1,0 +1,45 @@
+# Pinned for reproducibility (Python 3.11). Upgrade deliberately, never implicitly.
+
+# --- data & ML ---
+numpy==1.26.4
+pandas==2.2.3
+pyarrow==18.1.0
+scikit-learn==1.5.2
+xgboost==2.1.3
+optuna==4.1.0
+scipy==1.14.1
+matplotlib==3.9.3
+pyyaml==6.0.2
+python-dotenv==1.0.1
+
+# --- data versioning & validation ---
+dvc==3.58.0
+pandera==0.21.0
+
+# --- experiment tracking & registry ---
+mlflow==2.19.0
+
+# --- serving ---
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+prometheus-fastapi-instrumentator==7.0.0
+prometheus-client==0.21.1
+requests==2.32.3
+
+# --- monitoring ---
+evidently==0.7.0
+
+# --- orchestration ---
+prefect==3.1.5
+
+# --- dev / test ---
+pytest==8.3.4
+httpx==0.28.1
+ruff==0.8.4
+
+# --- transitive pins: newer releases of these broke the pinned direct deps above ---
+pathspec==0.12.1        # dvc 3.58 imports a private symbol removed in pathspec 1.x
+sqlalchemy==2.0.36      # mlflow 2.19 / prefect 3.1 are tested against SQLAlchemy 2.0
+multimethod==1.12       # pandera 0.21 imports `overload`, removed in multimethod 2.x
+cloudpickle==3.1.2      # models are cloudpickled: training and serving must match
