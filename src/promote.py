@@ -112,7 +112,7 @@ def run() -> dict:
     )
     out = asdict(result)
     REPORTS_DIR.mkdir(exist_ok=True)
-    (REPORTS_DIR / "promotion.json").write_text(json.dumps(out, indent=2))
+    (REPORTS_DIR / "promotion.json").write_text(json.dumps(out, indent=2), newline="\n")
     print(json.dumps(out, indent=2))
     if result.promoted:
         print("@champion moved. Restart the API or call POST /reload to serve the new model.")
