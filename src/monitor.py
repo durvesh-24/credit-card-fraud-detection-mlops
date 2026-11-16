@@ -116,7 +116,7 @@ def run_drift_check(lookback_hours: float | None = None) -> dict:
         "ks_results": ks.round(6).to_dict(orient="records"),
         "html_report": str(REPORTS_DIR / "drift_report.html"),
     })
-    (REPORTS_DIR / "drift.json").write_text(json.dumps(result, indent=2))
+    (REPORTS_DIR / "drift.json").write_text(json.dumps(result, indent=2), newline="\n")
     summary = {k: v for k, v in result.items() if k != "ks_results"}
     print(json.dumps(summary, indent=2))
     return result
