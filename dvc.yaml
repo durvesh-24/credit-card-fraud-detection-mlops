@@ -1,0 +1,51 @@
+# DVC pipeline: `dvc repro` reruns only the stages whose deps / params changed.
+# `dvc dag` prints the graph:  validate -> split -> train
+stages:
+  validate:
+    cmd: python -m src.validate
+    deps:
+      - data/raw/creditcard.csv
+      - src/validate.py
+    params:
+      - data.raw_path
+    metrics:
+      - reports/validation.json:
+          cache: false
+
+  split:
+    cmd: python -m src.split
+    deps:
+      - data/raw/creditcard.csv
+      - src/split.py
+      - reports/validation.json   # forces split to run only after a successful validation
+    params:
+      - split
+      - data.processed_dir
+    outs:
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+      - data/processed/reference.parquet
+    metrics:
+      - reports/split_stats.json:
+          cache: false
+
+  train:
+    cmd: python -m src.train
+    deps:
+      - data/processed/train.parquet
+      - data/processed/val.parquet
+      - data/processed/test.parquet
+      - src/train.py
+      - src/features.py
+    params:
+      - train
+      - mlflow
+    metrics:
+      - reports/metrics.json:
+          cache: false
+    plots:
+      - reports/confusion_matrix.png:
+          cache: false
+      - reports/pr_curve.png:
+          cache: false
