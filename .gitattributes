@@ -1,0 +1,4 @@
+# Normalise line endings so shell scripts / Dockerfiles work inside Linux containers
+* text=auto eol=lf
+*.png binary
+*.parquet binary
