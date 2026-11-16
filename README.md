@@ -138,7 +138,7 @@ python scripts/rollback.py --list                      # 5. see versions, @champ
 
 What to expect in step 4: a new version is registered and tagged `@challenger`. It becomes `@champion` only if it beats the current champion's test PR-AUC by more than 0.005. If the raw data hasn't changed, the retrained model is essentially the same and **the gate correctly keeps the old champion**. In real life, retraining runs on *newly labelled* data (`dvc add` a new snapshot), which is what lets a model adapt. When promotion happens, the flow calls `POST /reload` and the API starts serving the new champion without a restart. If a promoted model misbehaves, roll back with `python scripts/rollback.py --version <N>` and `POST /reload`.
 
-Grafana (http://localhost:3000, user/password from `.env`) → *Fraud Detection API*: watch requests/s, p50/p95/p99 latency, error rate and the flagged-transaction rate move as the simulator runs.
+**Live dashboard:** run `python scripts/demo_traffic.py --minutes 10` to send continuous, realistic traffic (normal payments, about 2% real frauds from the test period, about 1% invalid requests). Then open Grafana (http://localhost:3000, user/password from `.env`) → *Fraud Detection API* and watch requests/s, p50/p95/p99 latency, error rate and the flagged-transaction rate update every 10 seconds.
 
 Schedule monitoring daily at 06:00:
 
