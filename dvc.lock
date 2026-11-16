@@ -1,0 +1,121 @@
+schema: '2.0'
+stages:
+  validate:
+    cmd: python -m src.validate
+    deps:
+    - path: data/raw/creditcard.csv
+      hash: md5
+      md5: e90efcb83d69faf99fcab8b0255024de
+      size: 150828752
+    - path: src/validate.py
+      hash: md5
+      md5: e35cb4c80d5d55550e34682241b61f80
+      size: 1919
+    params:
+      params.yaml:
+        data.raw_path: data/raw/creditcard.csv
+    outs:
+    - path: reports/validation.json
+      hash: md5
+      md5: 9cfd28b6c5d09718889a768cf0abcfe3
+      size: 90
+  split:
+    cmd: python -m src.split
+    deps:
+    - path: data/raw/creditcard.csv
+      hash: md5
+      md5: e90efcb83d69faf99fcab8b0255024de
+      size: 150828752
+    - path: reports/validation.json
+      hash: md5
+      md5: 9cfd28b6c5d09718889a768cf0abcfe3
+      size: 90
+    - path: src/split.py
+      hash: md5
+      md5: 8364f53e9e1adcc678464dfde43d79f4
+      size: 2217
+    params:
+      params.yaml:
+        data.processed_dir: data/processed
+        split:
+          train_frac: 0.7
+          val_frac: 0.15
+    outs:
+    - path: data/processed/reference.parquet
+      hash: md5
+      md5: dc6879babb99aea159bfed0a6a074d33
+      size: 53579042
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 422d62bff1659829be8b8962f04712f8
+      size: 12047472
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: dc6879babb99aea159bfed0a6a074d33
+      size: 53579042
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: 959adc0e2293e09f09ac4419f153c0e0
+      size: 12050991
+    - path: reports/split_stats.json
+      hash: md5
+      md5: 048f8510b49a704f9bb9a84cd53fe359
+      size: 362
+  train:
+    cmd: python -m src.train
+    deps:
+    - path: data/processed/test.parquet
+      hash: md5
+      md5: 422d62bff1659829be8b8962f04712f8
+      size: 12047472
+    - path: data/processed/train.parquet
+      hash: md5
+      md5: dc6879babb99aea159bfed0a6a074d33
+      size: 53579042
+    - path: data/processed/val.parquet
+      hash: md5
+      md5: 959adc0e2293e09f09ac4419f153c0e0
+      size: 12050991
+    - path: src/features.py
+      hash: md5
+      md5: 0b93d389f1b883136119344b629f2d6d
+      size: 1468
+    - path: src/train.py
+      hash: md5
+      md5: f9e25529122166c1534074f73520b5fd
+      size: 13301
+    params:
+      params.yaml:
+        mlflow:
+          experiment_name: fraud-detection
+          registered_model_name: fraud-detector
+        train:
+          model: xgboost
+          run_baseline: true
+          tune: false
+          n_trials: 20
+          random_state: 42
+          xgboost:
+            n_estimators: 400
+            max_depth: 5
+            learning_rate: 0.05
+            subsample: 0.8
+            colsample_bytree: 0.8
+            min_child_weight: 1
+            early_stopping_rounds: 40
+          logreg:
+            C: 0.1
+            max_iter: 2000
+    outs:
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 8efaa35222a845b9fcfb937bbe0ad10a
+      size: 26347
+    - path: reports/metrics.json
+      hash: md5
+      md5: ec5b95eb2f60f0961696907d551991c2
+      size: 1048
+    - path: reports/pr_curve.png
+      hash: md5
+      md5: 6b19379bbfc5513d0366af51284ab004
+      size: 16430
