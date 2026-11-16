@@ -47,16 +47,25 @@ flowchart LR
 
 ## Results
 
-> **Placeholders — fill in after running `dvc repro` on the real Kaggle data.** Numbers come from
-> `reports/metrics.json` (also in the MLflow UI). Never invented, never tuned on test.
+Real run on the full Kaggle dataset (284,807 transactions, 492 frauds), chronological split:
+train 199,364 rows (0.193% fraud) · validation 42,721 (0.131%) · test 42,722 (0.122%, **52 frauds**).
+Thresholds are chosen on validation only; the test set is used once for reporting and for the promotion gate.
+Source: `reports/metrics.json` (tracked by DVC) and the MLflow UI.
 
-| Model | Val PR-AUC | **Test PR-AUC** | Test ROC-AUC | Test Precision | Test Recall | Test F1 | Threshold (from val) |
-|---|---|---|---|---|---|---|---|
-| Logistic regression (baseline) | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| XGBoost | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
-| XGBoost + Optuna | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
+| Model | Val PR-AUC | **Test PR-AUC** | Test ROC-AUC | Test Precision | Test Recall | Test F1 | Threshold (from val) | Registry |
+|---|---|---|---|---|---|---|---|---|
+| Logistic regression (baseline) | 0.829 | 0.696 | 0.978 | 0.946 | 0.673 | 0.787 | 0.99999 | not registered |
+| **XGBoost** | 0.852 | **0.758** | 0.979 | 0.867 | 0.750 | 0.804 | 0.949 | **v1 — @champion** |
+| XGBoost + Optuna (30 trials) | **0.881** | 0.741 | 0.973 | 0.875 | 0.673 | 0.761 | 0.719 | v2 — @challenger, rejected |
 
-Serving (from Grafana under load): p50 _TBD_ ms · p95 _TBD_ ms · p99 _TBD_ ms.
+**What the champion does on the unseen test period:** it catches **39 of 52 frauds** and raises **6 false alarms among 42,670 legitimate payments**.
+
+**Serving latency** (Prometheus, 2,022 sequential `/predict` requests, Docker Desktop on a laptop): p50 **63 ms** · p95 **94 ms** · p99 **179 ms**. That includes validation, feature building, scoring and request logging.
+
+**Key findings**
+- **XGBoost beats the baseline** on the headline metric (test PR-AUC 0.758 vs 0.696) and catches more fraud (recall 0.75 vs 0.67).
+- **The promotion gate earned its keep.** Optuna raised *validation* PR-AUC from 0.852 to 0.881, but *test* PR-AUC fell to 0.741, because the tuning overfit the validation period. Scored on held-out data, the challenger lost by 0.018, so `@champion` stayed on v1. Without the gate, the tuned model would have shipped and been worse.
+- **The data really does drift over two days.** The fraud rate falls from 0.193% to 0.122%, and the KS monitor flags all 29 features on test-period traffic (median KS statistic 0.10; a train-vs-train control flags 0/29). That matches the drop from validation to test PR-AUC. A random split would have hidden this; the time-based split exposes it.
 
 *Why PR-AUC, not accuracy?* Fraud is ~0.17% of transactions, so a model that never flags fraud scores 99.83% accuracy and is useless. PR-AUC measures how well fraud is ranked above legitimate traffic, focusing on the rare positive class.
 
@@ -118,10 +127,10 @@ dvc push
 ## Demo: drift → retrain → promote
 
 ```bash
-python scripts/simulate_drift.py --n 500 --no-drift   # 1. normal traffic
-python -m src.monitor                                  #    -> "No significant drift."
+python scripts/simulate_drift.py --n 500 --no-drift   # 1. traffic replayed from the test period
+python -m src.monitor                                  #    -> on the real data this already drifts (see Results)
 python scripts/simulate_drift.py --n 500               # 2. Amount x3, noise on V1..V12
-python -m src.monitor                                  #    -> 13/29 features drifted (> 30%): retrain
+python -m src.monitor                                  #    -> drift share > 30%: retraining recommended
 open reports/drift_report.html                         # 3. Evidently's per-feature view
 python -m src.flows monitor                            # 4. Prefect: drift check -> fraud-retraining subflow
 python scripts/rollback.py --list                      # 5. see versions, @champion, @challenger
@@ -150,7 +159,7 @@ Data drift doesn't always hurt accuracy, and concept drift can happen with no da
 ## Limitations
 
 - Retraining reuses the latest labelled snapshot in `data/raw/`; API logs carry no labels, so there's no feedback loop of ground truth yet. Concept drift is therefore not monitored.
-- KS tests on large samples flag tiny, harmless shifts. 29 tests at p < 0.01 also produce occasional false positives (no multiple-testing correction).
+- The drift rule is too sensitive for this dataset. The reference is the whole training period, while live traffic covers a few hours, and the V-features vary with time of day. A p-value-only rule therefore flags every feature on genuine test-period traffic and would call for retraining daily. Fixes: a rolling or time-of-day-matched reference, an effect-size floor on the KS statistic (or PSI), and multiple-testing correction.
 - Promotion compares models on the same test set every time; repeated selection on one test set slowly overfits it. A fresh, recent holdout or shadow traffic is better.
 - `Time` is seconds since the first transaction, so `hour` is an offset, not the true clock hour. V1–V28 are anonymised PCA components, so the model can't be explained in business terms.
 - The threshold is set manually via `FRAUD_THRESHOLD`; it isn't tied to the model version automatically.
