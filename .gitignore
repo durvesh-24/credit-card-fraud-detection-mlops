@@ -1,0 +1,34 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- secrets / local env ---
+.env
+
+# --- data: versioned by DVC, never by git ---
+/data/raw/creditcard.csv
+/data/processed/*
+!/data/processed/.gitkeep
+/data/logs/*
+!/data/logs/.gitkeep
+
+# --- MLflow local state (server data, local runs) ---
+mlruns/
+mlartifacts/
+mlflow_data/
+mlflow.db
+
+# --- generated reports that are not DVC metrics ---
+reports/drift_report.html
+reports/drift.json
+reports/promotion.json
+
+# --- misc ---
+.DS_Store
+*.pdf
+.prefect/
